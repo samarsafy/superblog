@@ -7,13 +7,14 @@ class App extends React.Component {
     this.state ={
       posts: [],
       form: {},
+      editing: null,
       order: 0,
       editing: false
     }
-    this.handleSubmit = this.handleSubmit.bind(this)
-    this.handleChange = this.handleChange.bind(this)
-    this.handleDelete = this.handleDelete.bind(this)
-    this.handleEdit = this.handleEdit.bind(this)
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
+    this.handleUpdate = this.handleUpdate.bind(this);
   }
 
   componentWillMount(){
@@ -24,16 +25,26 @@ class App extends React.Component {
 
   handleSubmit (e) {
     e.preventDefault();
-    console.log(event.target.elements);
     let form = this.state.form
-    axios.post('http://localhost:5000/api/posts', form).then(response => {
-      console.log("Slide added successful: ", response);
-      fetch(`http://localhost:5000/api/posts`).then(resp => resp.json()).then(posts => {
-        this.setState({ posts: posts });
-      });
-    }).catch(function (error) {
-      console.log("Error: ", error);
-    })
+    fetch("http://localhost:5000/api/posts", {
+      method:"post",
+      body: JSON.stringify(form),
+      headers: {
+        "content-type": "application/json"
+      }
+    }).then(response => response.json())
+    .then(response => {
+      console.log(response)
+      let posts = {...this.state.posts}
+      var posts_array = []
+      for (var key in posts) {
+        if (posts.hasOwnProperty(key)) {
+          posts_array.push(posts[key])
+        }
+      }
+      posts_array.push(response.post)
+      this.setState({posts: posts_array});
+    });
   }
 
   handleChange(e) {
@@ -51,7 +62,7 @@ class App extends React.Component {
   handleDelete(id) {
     console.log(id);
     axios.delete(`http://localhost:5000/api/posts/${id}`).then(response => {
-      console.log("Slide added successful: ", response);
+      console.log("Slide deleted successful: ", response);
       fetch(`http://localhost:5000/api/posts`).then(resp => resp.json()).then(posts => {
         this.setState({ posts });
       });
@@ -60,10 +71,10 @@ class App extends React.Component {
     })
   }
 
-  handleEdit(id) {
-    console.log(id);
-    axios.put(`http://localhost:5000/api/posts/${id}`).then(response => {
-      console.log("Slide added successful: ", response);
+  handleUpdate(event, post) {
+    event.preventDefault()
+    axios.put(`http://localhost:5000/api/posts/${post._id}`, this.state.form).then(response => {
+      console.log("Slide edited successful: ", response);
       fetch(`http://localhost:5000/api/posts`).then(resp => resp.json()).then(posts => {
         this.setState({ posts: posts, editing: null });
         M.toast({html:'post updated successfully!'})
@@ -72,8 +83,41 @@ class App extends React.Component {
       console.log("Error: ", error);
     })
   }
+  handelEdit(post) {
+    this.setstate ({
+      form: post,
+      editing: post
+    })
+  }
   render() {
-   
+   const posttemplate = this.state.posts.map(post => (
+    this.state.editing && this.state.editing._id === post._id ? (
+      <form onSubmit={(event) => this.handleUpdate(event, post)}>
+      <div className="form-group">
+      <label className="w-100">
+      Name:
+      <input className="form-control" defaultValue={this.state.editing.name} id="name" onChange={this.handleChange}/>
+      </label>
+      </div>
+      <div className="form-group">
+      <label className="w-100">
+      content:
+      <textarea id="content" className"form-control" defaultValue={this.state.editing.content} id="name" onChange={this.handleChange}/>
+      </label>
+      </div>
+      <div className="form-group">
+      <input className="btn btn-primary" type="submit" value"Submit"/>
+      </div>
+      </form>
+      ) : (
+          <li className="list-group-item">
+           <h2>{ post.name}</h2>
+           <p>{post.content}</p>
+           <button className="btn btn-info" onClick={() => this.handleEdit(post)}>Edit</button>
+           <button className="btn btn-danger" onClick={() => this.handleDelete(post._id)}>Remove</button>
+        </li>
+      )
+    ))
 
     return (
       <div className="container">
@@ -100,18 +144,8 @@ class App extends React.Component {
         <div className="my-3">
           <h2>List of all posts:</h2>
           <ul className="list-group">
-            {
-              this.state.posts.map((post, i) => (
-                  <li className="list-group-item" key={i}>
-                    <h2>{post.name}</h2>
-                    <p>{post.content}</p>
-                    <h6>{post.order}</h6>
-                  <button className="btn btn-danger" onClick={() => this.handleDelete(post._id)}>Remove</button>
-                  <br />
-                  <br />
-                  <button className="btn btn-danger" onClick={() => this.handleEdit(post._id)}>Edit</button>
-                  </li>))
-              }
+            {posttemplate }
+            
           </ul>
         </div>
       </div>
