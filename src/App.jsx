@@ -65,13 +65,16 @@ class App extends React.Component {
     axios.put(`http://localhost:5000/api/posts/${id}`).then(response => {
       console.log("Slide added successful: ", response);
       fetch(`http://localhost:5000/api/posts`).then(resp => resp.json()).then(posts => {
-        this.setState({ posts });
+        this.setState({ posts: posts, editing: null });
+        M.toast({html:'post updated successfully!'})
       });
     }).catch(function (error) {
       console.log("Error: ", error);
     })
   }
   render() {
+   
+
     return (
       <div className="container">
         <div className="my-3">
@@ -86,7 +89,7 @@ class App extends React.Component {
             <div className="form-group">
               <label>
                 Content:
-                <textarea id="content" className="form-control" onChange={this.handleChange} />
+                <textarea id="content" className="materialize-textarea" defaultValue = {this.state.editing.content} onChange={this.handleChange} />
               </label>
             </div>
             <div className="form-group">
